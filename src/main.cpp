@@ -3,11 +3,15 @@
 #include "parser.hpp"
 
 int main() {
-    Parser::Grammar rules = {
+    /* Parser::Grammar rules = {
         Rule("Formula") << Rule::Ref("Constante") | (Rule::Text("(") & Rule::Ref("Formula") & Rule::Text(")")),
         Rule("Constante") << Rule::Text("T") | Rule::Text("F"),
         Rule("AbreParen") << Rule::Text("("),
         Rule("FechaParen") << Rule::Text(")"),
+    }; */
+
+    Parser::Grammar rules = {
+        Rule("letter") << Rule::Text("A")(Rule::Sequence::REPETITION),
     };
 
     std::cout << "Rules:" << '\n';
@@ -22,6 +26,6 @@ int main() {
         std::cout << "> ";
         std::getline(std::cin, expr);
         if (expr.empty()) {is_running = false; continue; }
-        std::cout << expr << ": " << (parser.valid(expr, "Formula") ? "valido" : "invalido") << '\n';
+        std::cout << expr << ": " << (parser.valid(expr, "letter") ? "valido" : "invalido") << '\n';
     }
 }

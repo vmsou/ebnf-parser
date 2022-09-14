@@ -11,6 +11,7 @@ class Rule {
     public:
         enum class Mode { NONE=0, START, AND, OR };
         enum class Kind { NONE=0, RULE, TEXT, REF, GROUP };
+        enum class Sequence { NONE=0, OPTION, REPETITION };
         using token_t = char;
         using buffer_t = std::list<token_t>;
 
@@ -18,6 +19,7 @@ class Rule {
     public:
         Mode _mode = Mode::NONE;
         Kind _kind = Kind::NONE;
+        Sequence _sequence = Sequence::NONE;
         std::string _command;
         std::vector<Rule> _elements;
 
@@ -42,15 +44,22 @@ class Rule {
         Kind kind() const;
         void kind(Kind kind);
 
+        Sequence sequence() const;
+        void sequence(Sequence sequence);
+
         bool handle_text(buffer_t& tokens, buffer_t& buffer) const;
         bool handle_ref(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
+
+        bool handle_kind(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
 
         bool valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool valid(Parser& parser, const std::string& text) const;
 
     // Operators
     public:
+        Rule& operator()(Sequence sequence);
+
         Rule& operator<<(Rule& other);
         Rule& operator&(Rule& other);
         Rule& operator|(Rule& other);

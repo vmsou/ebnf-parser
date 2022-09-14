@@ -18,6 +18,9 @@ void Rule::mode(Mode mode) { this->_mode = mode; }
 Rule::Kind Rule::kind() const { return this->_kind; }
 void Rule::kind(Kind kind) { this->_kind = kind; }
 
+Rule::Sequence Rule::sequence() const { return this->_sequence; }
+void Rule::sequence(Sequence sequence) { this->_sequence = sequence; }
+
 bool Rule::handle_text(buffer_t& tokens, buffer_t& buffer) const {
     std::size_t len = this->_command.size();
     std::size_t i = 0;
@@ -61,7 +64,7 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
     return valid;
 }
 
-bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
+bool Rule::handle_kind(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
     switch (this->kind()) {
         case Kind::NONE: return false; break;
@@ -73,6 +76,20 @@ bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     return valid;
 }
 
+bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
+    bool valid = false;
+    switch (this->sequence()) {
+        case Sequence::REPETITION: {
+            while (this->handle_kind(parser, tokens, buffer)) {
+                valid = true;
+            }
+            break;
+        }
+        default: return this->handle_kind(parser, tokens, buffer);
+    }
+    return valid;
+}
+
 bool Rule::valid(Parser& parser, const std::string& text) const {
     buffer_t tokens(text.begin(), text.end());
     buffer_t buffer;
@@ -80,6 +97,8 @@ bool Rule::valid(Parser& parser, const std::string& text) const {
 }
 
 // Operators
+Rule& Rule::operator()(Sequence sequence) {this->sequence(sequence); return *this; }
+
 Rule& Rule::operator<<(Rule& other) {
     this->kind(Kind::RULE);
     other.mode(Mode::START);
@@ -115,6 +134,7 @@ Rule& Rule::operator|(Rule& other) {
 std::ostream& operator<<(std::ostream& os, const Rule& rule) {
     using Mode = Rule::Mode;
     using Kind = Rule::Kind;
+    using Sequence = Rule::Sequence;
 
     switch (rule.mode()) {
         case Mode::AND: os << " , "; break;
@@ -122,19 +142,32 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
         default: break;
     }
 
+    switch (rule.sequence()) {
+        case Sequence::REPETITION: os << "{ "; break;
+        case Sequence::OPTION: os << "[ "; break;
+        default: break;
+    }
+
     switch (rule.kind()) {
-        case Kind::TEXT: return os << "\"" <<  rule.name() << "\"";
-        case Kind::REF: return os << rule.name();
+        case Kind::TEXT: os << "\"" <<  rule.name() << "\""; break;
+        case Kind::REF: os << rule.name(); break;
         case Kind::RULE: {
             os << rule.name() << " = ";
             for (const Rule& r : rule._elements) os << r;
-            return os;
+            break;
         }
         case Kind::GROUP: {
             os << "(";
             for (const Rule& r : rule._elements) os << r;
-            return os << ")";
+            os << ")";
+            break;
         }
+        default: break;
+    }
+
+    switch (rule.sequence()) {
+        case Sequence::REPETITION: os << " }"; break;
+        case Sequence::OPTION: os << " ]"; break;
         default: break;
     }
     return os;
