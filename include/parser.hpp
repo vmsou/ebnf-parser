@@ -53,6 +53,10 @@ class Rule {
         Rule& operator<<(Rule&& other);
         Rule& operator&(Rule&& other);
         Rule& operator|(Rule&& other);
+
+    // Functions
+    public:
+        friend std::ostream& operator<<(std::ostream& os, const Rule& rule);
 };
 
 class Parser {
@@ -85,6 +89,7 @@ class Parser {
     // Methods
     public:
         const Rule& get_rule(const std::string& name) const;
+        bool valid(const std::string& text, const std::string& rule_name);
 };
 
 // Functions

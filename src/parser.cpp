@@ -96,6 +96,30 @@ Rule& Rule::operator|(Rule&& other) {
     return *this;
 }
 
+// Functions
+std::ostream& operator<<(std::ostream& os, const Rule& rule) {
+    using Mode = Rule::Mode;
+    using Kind = Rule::Kind;
+
+    switch (rule.mode()) {
+        case Mode::AND: os << std::string(" , "); break;
+        case Mode::OR: os << std::string(" | "); break;
+        default: break;
+    }
+
+    switch (rule.kind()) {
+        case Kind::TEXT: return os << "\"" + rule.name() + "\"";
+        case Kind::REF: return os << rule.name();
+        case Kind::RULE: {
+            os << rule.name() << std::string(" = ");
+            for (const Rule& r : rule._elements) os << r;
+            return os;
+        }
+        default: break;
+    }
+    return os;
+}
+
 /* Parser:: */
 // Constructors
 Parser::Parser(Grammar* grammar) { for (const Rule& r : *grammar) this->add_rule(r); }
@@ -120,6 +144,13 @@ void Parser::revert_tokens(buffer_t& tokens, buffer_t& buffer) {
 // Methods
 const Rule& Parser::get_rule(const std::string& name) const { return this->rules.at(name); }
 
+bool Parser::valid(const std::string& text, const std::string& rule_name) {
+    const Rule& rule = this->get_rule(rule_name);
+    return rule.valid(*this, text);
+}
+
+
+/* Functions */
 std::ostream& operator<<(std::ostream& os, Parser::buffer_t& buffer) {
     for (const Parser::token_t& t : buffer) os << std::string(1, t);
     return os;
