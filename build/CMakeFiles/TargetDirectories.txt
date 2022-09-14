@@ -1,3 +1,0 @@
-D:/Git/ebnf-parser/build/CMakeFiles/ebnfParser.dir
-D:/Git/ebnf-parser/build/CMakeFiles/edit_cache.dir
-D:/Git/ebnf-parser/build/CMakeFiles/rebuild_cache.dir

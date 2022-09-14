@@ -1,3 +1,0 @@
-D:\Aplicativos\CMake\bin\cmake.exe -E rm -f CMakeFiles\ebnfParser.dir/objects.a
-D:\MinGW\mingw64\bin\ar.exe qc CMakeFiles\ebnfParser.dir/objects.a @CMakeFiles\ebnfParser.dir\objects1.rsp
-D:\MinGW\mingw64\bin\g++.exe -Wall -g -Wl,--whole-archive CMakeFiles\ebnfParser.dir/objects.a -Wl,--no-whole-archive -o ebnfParser.exe -Wl,--out-implib,libebnfParser.dll.a -Wl,--major-image-version,0,--minor-image-version,0 @CMakeFiles\ebnfParser.dir\linklibs.rsp

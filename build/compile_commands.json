@@ -1,7 +1,0 @@
-[
-{
-  "directory": "D:/Git/ebnf-parser/build",
-  "command": "D:\\MinGW\\mingw64\\bin\\g++.exe  @CMakeFiles/ebnfParser.dir/includes_CXX.rsp -Wall -g -std=gnu++17 -o CMakeFiles\\ebnfParser.dir\\src\\main.cpp.obj -c D:\\Git\\ebnf-parser\\src\\main.cpp",
-  "file": "D:/Git/ebnf-parser/src/main.cpp"
-}
-]
