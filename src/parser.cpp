@@ -27,26 +27,28 @@ bool Rule::handle_text(buffer_t& tokens, buffer_t& buffer) const {
         if (c != this->_command[i]) break;
         ++i;
     }
-    if (i != len) { Parser::revert_tokens(tokens, buffer); return false; }
+    if (i != len) return false;
     return true;
 }
 
 bool Rule::handle_ref(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     const Rule& rule = parser.get_rule(this->_command);
-    return rule.valid(parser, tokens, buffer);
+    buffer_t temp_buffer;
+    return rule.valid(parser, tokens, temp_buffer);
 }
 bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
     for (const Rule& r : this->_elements) {
         if (r.mode() == Mode::START) {
             valid = r.valid(parser, tokens, buffer);
+            if (!valid) Parser::revert_tokens(tokens, buffer);
         }    
         else if (r.mode() == Mode::OR) {
             buffer_t temp_buffer;
             if (valid || r.valid(parser, tokens, temp_buffer)) return true;
             else {
-                valid = false;
                 Parser::revert_tokens(tokens, temp_buffer);
+                valid = false;
             }
         } 
         else if (r.mode() == Mode::AND) {
@@ -61,37 +63,50 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
 
 bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
-    switch (this->_kind) {
+    switch (this->kind()) {
         case Kind::NONE: return false; break;
         case Kind::TEXT: valid = this->handle_text(tokens, buffer); break;
         case Kind::REF: valid = this->handle_ref(parser, tokens, buffer); break;
         case Kind::RULE: valid = this->handle_rule(parser, tokens, buffer); break;
+        case Kind::GROUP: valid = this->handle_rule(parser, tokens, buffer); break;
     }
-    return valid && tokens.empty();
+    return valid;
 }
 
 bool Rule::valid(Parser& parser, const std::string& text) const {
     buffer_t tokens(text.begin(), text.end());
     buffer_t buffer;
-    return this->valid(parser, tokens, buffer);
+    return this->valid(parser, tokens, buffer) && tokens.empty();
 }
 
 // Operators
-Rule& Rule::operator<<(Rule&& other) {
+Rule& Rule::operator<<(Rule& other) {
     this->kind(Kind::RULE);
     other.mode(Mode::START);
     this->_elements.push_back(other);
     return *this;
 }
 
-Rule& Rule::operator&(Rule&& other) {
+Rule& Rule::operator&(Rule& other) {
     other.mode(Mode::AND);
+    if (this->kind() != Kind::RULE && this->kind() != Kind::GROUP) {
+        Rule group(Kind::GROUP, "");
+        this->mode(Mode::START);
+        group._elements.push_back(*this);
+        this->operator=(group);
+    }
     this->_elements.push_back(other);
     return *this;
 }
 
-Rule& Rule::operator|(Rule&& other) {
+Rule& Rule::operator|(Rule& other) {
     other.mode(Mode::OR);
+    if (this->kind() != Kind::RULE && this->kind() != Kind::GROUP) {
+        Rule group(Kind::GROUP, "");
+        this->mode(Mode::START);
+        group._elements.push_back(*this);
+        (*this) = group;
+    }
     this->_elements.push_back(other);
     return *this;
 }
@@ -102,18 +117,23 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
     using Kind = Rule::Kind;
 
     switch (rule.mode()) {
-        case Mode::AND: os << std::string(" , "); break;
-        case Mode::OR: os << std::string(" | "); break;
+        case Mode::AND: os << " , "; break;
+        case Mode::OR: os << " | "; break;
         default: break;
     }
 
     switch (rule.kind()) {
-        case Kind::TEXT: return os << "\"" + rule.name() + "\"";
+        case Kind::TEXT: return os << "\"" <<  rule.name() << "\"";
         case Kind::REF: return os << rule.name();
         case Kind::RULE: {
-            os << rule.name() << std::string(" = ");
+            os << rule.name() << " = ";
             for (const Rule& r : rule._elements) os << r;
             return os;
+        }
+        case Kind::GROUP: {
+            os << "(";
+            for (const Rule& r : rule._elements) os << r;
+            return os << ")";
         }
         default: break;
     }
@@ -152,6 +172,6 @@ bool Parser::valid(const std::string& text, const std::string& rule_name) {
 
 /* Functions */
 std::ostream& operator<<(std::ostream& os, Parser::buffer_t& buffer) {
-    for (const Parser::token_t& t : buffer) os << std::string(1, t);
+    for (const Parser::token_t& t : buffer) os << t;
     return os;
 }

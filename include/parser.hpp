@@ -1,3 +1,4 @@
+#include <iostream>
 #include <list>
 #include <string>
 #include <unordered_map>
@@ -9,7 +10,7 @@ class Rule {
     // Alias
     public:
         enum class Mode { NONE=0, START, AND, OR };
-        enum class Kind { NONE=0, RULE, TEXT, REF };
+        enum class Kind { NONE=0, RULE, TEXT, REF, GROUP };
         using token_t = char;
         using buffer_t = std::list<token_t>;
 
@@ -50,9 +51,13 @@ class Rule {
 
     // Operators
     public:
-        Rule& operator<<(Rule&& other);
-        Rule& operator&(Rule&& other);
-        Rule& operator|(Rule&& other);
+        Rule& operator<<(Rule& other);
+        Rule& operator&(Rule& other);
+        Rule& operator|(Rule& other);
+
+        inline Rule& operator<<(Rule&& other) { return this->operator<<(other); }
+        inline Rule& operator&(Rule&& other) { return this->operator&(other); }
+        inline Rule& operator|(Rule&& other) { return this->operator|(other); }
 
     // Functions
     public:

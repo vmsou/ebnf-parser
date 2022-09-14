@@ -4,8 +4,10 @@
 
 int main() {
     Parser::Grammar rules = {
-        Rule("Formula") << Rule::Ref("Constante"),
-        Rule("Constante") << Rule::Text("T") | Rule::Text("F")
+        Rule("Formula") << Rule::Ref("Constante") | (Rule::Text("(") & Rule::Ref("Formula") & Rule::Text(")")),
+        Rule("Constante") << Rule::Text("T") | Rule::Text("F"),
+        Rule("AbreParen") << Rule::Text("("),
+        Rule("FechaParen") << Rule::Text(")"),
     };
 
     std::cout << "Rules:" << '\n';
