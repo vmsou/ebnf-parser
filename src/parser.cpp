@@ -37,7 +37,9 @@ bool Rule::handle_text(buffer_t& tokens, buffer_t& buffer) const {
 bool Rule::handle_ref(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     const Rule& rule = parser.get_rule(this->_command);
     buffer_t temp_buffer;
-    return rule.valid(parser, tokens, temp_buffer);
+    bool valid = rule.valid(parser, tokens, temp_buffer);
+    for (auto it = temp_buffer.rbegin(); it != temp_buffer.rend(); ++it) buffer.push_front(*it);
+    return valid;
 }
 bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
@@ -48,11 +50,9 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
         }    
         else if (r.mode() == Mode::OR) {
             buffer_t temp_buffer;
-            if (valid || r.valid(parser, tokens, temp_buffer)) return true;
-            else {
-                Parser::revert_tokens(tokens, temp_buffer);
-                valid = false;
-            }
+            if (valid) return true;
+            else if (r.valid(parser, tokens, temp_buffer)) { buffer.merge(temp_buffer); return true; }
+            else Parser::revert_tokens(tokens, temp_buffer);
         } 
         else if (r.mode() == Mode::AND) {
             if (!r.valid(parser, tokens, buffer)) { 
@@ -61,6 +61,7 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
             }
         }
     }
+    // if (!valid) Parser::revert_tokens(tokens, buffer);
     return valid;
 }
 
@@ -80,12 +81,17 @@ bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
     switch (this->sequence()) {
         case Sequence::REPETITION: {
-            while (this->handle_kind(parser, tokens, buffer)) {
-                valid = true;
+            valid = true;
+            bool curr_valid = true;
+            while (curr_valid) {
+                buffer_t temp_buffer;
+                curr_valid = this->handle_kind(parser, tokens, temp_buffer);
+                if (!curr_valid) Parser::revert_tokens(tokens, temp_buffer);
+                else for (const token_t& t : temp_buffer) buffer.push_front(t);
             }
             break;
         }
-        default: return this->handle_kind(parser, tokens, buffer);
+        default: valid = this->handle_kind(parser, tokens, buffer); break;
     }
     return valid;
 }
@@ -93,7 +99,10 @@ bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
 bool Rule::valid(Parser& parser, const std::string& text) const {
     buffer_t tokens(text.begin(), text.end());
     buffer_t buffer;
-    return this->valid(parser, tokens, buffer) && tokens.empty();
+    bool valid = this->valid(parser, tokens, buffer) && tokens.empty();
+    /* std::cout << "tokens: " << tokens << '\n';
+    std::cout << "buffer: " << buffer << '\n'; */
+    return valid;
 }
 
 // Operators
@@ -157,9 +166,9 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
             break;
         }
         case Kind::GROUP: {
-            os << "(";
+            if (rule.sequence() == Sequence::NONE) os << "(";
             for (const Rule& r : rule._elements) os << r;
-            os << ")";
+            if (rule.sequence() == Sequence::NONE) os << ")";
             break;
         }
         default: break;

@@ -11,8 +11,18 @@ int main() {
     }; */
 
     Parser::Grammar rules = {
-        Rule("letter") << Rule::Text("A")(Rule::Sequence::REPETITION),
+        Rule("letter") << "A" | "B" | "C" | "D" | "E" | "F" | "G"
+                        | "H" | "I" | "J" | "K" | "L" | "M" | "N"
+                        | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
+                        | "V" | "W" | "X" | "Y" | "Z",
+        Rule("digit") << "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9",
+        Rule("symbol") << "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">" | "'" | "\"" | "=" | "|" | "." | "," | ";",
+        Rule("character") << Rule::Ref("letter") | Rule::Ref("digit") | Rule::Ref("symbol") | "_",
+        Rule("identifier") << Rule::Ref("letter") & (Rule::Ref("letter") | Rule::Ref("digit") | "_")(Rule::Sequence::REPETITION),
+        Rule("terminal") << Rule::Text("'") & Rule::Ref("character") & Rule::Text("character")(Rule::Sequence::REPETITION) & Rule::Text("'"),
     };
+
+    std::string chosen_rule;
 
     std::cout << "Rules:" << '\n';
     for (const Rule& rule : rules) std::cout << rule << '\n';
@@ -21,11 +31,14 @@ int main() {
     Parser parser{ &rules };
     
     bool is_running = true;
+    std::cout << "Testing rule: ";
+    std::getline(std::cin, chosen_rule);
     std::string expr;
     while (is_running) {
         std::cout << "> ";
         std::getline(std::cin, expr);
         if (expr.empty()) {is_running = false; continue; }
-        std::cout << expr << ": " << (parser.valid(expr, "letter") ? "valido" : "invalido") << '\n';
+        bool valid = parser.valid(expr, chosen_rule);
+        std::cout << expr << ": " << (valid ? "valido" : "invalido") << '\n';
     }
 }

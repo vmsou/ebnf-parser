@@ -1,3 +1,4 @@
+#include <initializer_list>
 #include <iostream>
 #include <list>
 #include <string>
@@ -63,6 +64,10 @@ class Rule {
         Rule& operator<<(Rule& other);
         Rule& operator&(Rule& other);
         Rule& operator|(Rule& other);
+
+        inline Rule& operator<<(const std::string& other) { return this->operator<<(Rule::Text(other)); }
+        inline Rule& operator&(const std::string& other) { return this->operator&(Rule::Text(other)); }
+        inline Rule& operator|(const std::string& other) { return this->operator|(Rule::Text(other)); }
 
         inline Rule& operator<<(Rule&& other) { return this->operator<<(other); }
         inline Rule& operator&(Rule&& other) { return this->operator&(other); }
