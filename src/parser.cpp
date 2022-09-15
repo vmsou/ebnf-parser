@@ -61,7 +61,7 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
             }
         }
     }
-    // if (!valid) Parser::revert_tokens(tokens, buffer);
+    //if (!valid) Parser::revert_tokens(tokens, buffer);
     return valid;
 }
 
@@ -100,8 +100,6 @@ bool Rule::valid(Parser& parser, const std::string& text) const {
     buffer_t tokens(text.begin(), text.end());
     buffer_t buffer;
     bool valid = this->valid(parser, tokens, buffer) && tokens.empty();
-    /* std::cout << "tokens: " << tokens << '\n';
-    std::cout << "buffer: " << buffer << '\n'; */
     return valid;
 }
 
@@ -158,7 +156,7 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
     }
 
     switch (rule.kind()) {
-        case Kind::TEXT: os << "\"" <<  rule.name() << "\""; break;
+        case Kind::TEXT: os << "\"" <<  escape_string(rule.name()) << "\""; break;
         case Kind::REF: os << rule.name(); break;
         case Kind::RULE: {
             os << rule.name() << " = ";
@@ -204,6 +202,8 @@ void Parser::revert_tokens(buffer_t& tokens, buffer_t& buffer) {
 }
 
 // Methods
+bool Parser::has_rule(const std::string& name) const { return this->rules.find(name) != this->rules.cend(); }
+
 const Rule& Parser::get_rule(const std::string& name) const { return this->rules.at(name); }
 
 bool Parser::valid(const std::string& text, const std::string& rule_name) {
@@ -213,6 +213,15 @@ bool Parser::valid(const std::string& text, const std::string& rule_name) {
 
 
 /* Functions */
+std::string escape_string(const std::string& str) {
+    std::string escaped;
+    for (const char& c : str) {
+        if (c == '"') escaped += "\\";
+        escaped += c;
+    }
+    return escaped;
+}
+
 std::ostream& operator<<(std::ostream& os, Parser::buffer_t& buffer) {
     for (const Parser::token_t& t : buffer) os << t;
     return os;

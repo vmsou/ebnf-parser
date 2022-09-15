@@ -107,9 +107,12 @@ class Parser {
 
     // Methods
     public:
+        bool has_rule(const std::string& name) const;
         const Rule& get_rule(const std::string& name) const;
         bool valid(const std::string& text, const std::string& rule_name);
 };
 
 // Functions
+std::string escape_string(const std::string& str);
+
 std::ostream& operator<<(std::ostream& os, Parser::buffer_t& buffer);
