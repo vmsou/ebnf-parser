@@ -12,7 +12,7 @@ class Rule {
     public:
         enum class Mode { NONE=0, START, AND, OR };
         enum class Kind { NONE=0, RULE, TEXT, REF, GROUP };
-        enum class Sequence { NONE=0, OPTION, REPETITION };
+        enum class Sequence { NONE=0, OPTIONAL, REPETITION };
         using token_t = char;
         using buffer_t = std::list<token_t>;
 
@@ -56,6 +56,9 @@ class Rule {
 
         bool valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool valid(Parser& parser, const std::string& text) const;
+
+        Rule& repetition();
+        Rule& optional();
 
     // Operators
     public:

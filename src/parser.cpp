@@ -103,6 +103,9 @@ bool Rule::valid(Parser& parser, const std::string& text) const {
     return valid;
 }
 
+Rule& Rule::repetition() { return (*this)(Sequence::REPETITION); }
+Rule& Rule::optional() { return (*this)(Sequence::OPTIONAL); }
+
 // Operators
 Rule& Rule::operator()(Sequence sequence) {this->sequence(sequence); return *this; }
 
@@ -151,7 +154,7 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
 
     switch (rule.sequence()) {
         case Sequence::REPETITION: os << "{ "; break;
-        case Sequence::OPTION: os << "[ "; break;
+        case Sequence::OPTIONAL: os << "[ "; break;
         default: break;
     }
 
@@ -161,6 +164,7 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
         case Kind::RULE: {
             os << rule.name() << " = ";
             for (const Rule& r : rule._elements) os << r;
+            os << " ;";
             break;
         }
         case Kind::GROUP: {
@@ -174,7 +178,7 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
 
     switch (rule.sequence()) {
         case Sequence::REPETITION: os << " }"; break;
-        case Sequence::OPTION: os << " ]"; break;
+        case Sequence::OPTIONAL: os << " ]"; break;
         default: break;
     }
     return os;
