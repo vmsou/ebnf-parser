@@ -34,7 +34,7 @@ int main() {
                      | (Rule::Ref("rhs") & Rule::Text("|") & Rule::Ref("rhs"))
                      | (Rule::Ref("rhs") & Rule::Text(",") & Rule::Ref("rhs")),
         Rule("rule") << Rule::Ref("lhs") & Rule::Ref("whitespace").repetition() & "=" & Rule::Ref("whitespace").repetition() & Rule::Ref("rhs") & Rule::Ref("whitespace").repetition() &  ";",
-        Rule("grammar") << Rule::Ref("rule")(Rule::Sequence::REPETITION)
+        Rule("grammar") << Rule::Ref("rule").repetition(),
     };
 
 

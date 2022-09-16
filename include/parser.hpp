@@ -12,7 +12,7 @@ class Rule {
     public:
         enum class Mode { NONE=0, START, AND, OR };
         enum class Kind { NONE=0, RULE, TEXT, REF, GROUP };
-        enum class Sequence { NONE=0, OPTIONAL, REPETITION };
+        enum class Flag { NONE=0, OPTIONAL, REPETITION };
         using token_t = char;
         using buffer_t = std::list<token_t>;
 
@@ -20,7 +20,7 @@ class Rule {
     public:
         Mode _mode = Mode::NONE;
         Kind _kind = Kind::NONE;
-        Sequence _sequence = Sequence::NONE;
+        Flag _flag = Flag::NONE;
         std::string _command;
         std::vector<Rule> _elements;
 
@@ -45,14 +45,14 @@ class Rule {
         Kind kind() const;
         void kind(Kind kind);
 
-        Sequence sequence() const;
-        void sequence(Sequence sequence);
+        Flag flag() const;
+        void flag(Flag flag);
 
         bool handle_text(buffer_t& tokens, buffer_t& buffer) const;
         bool handle_ref(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
 
-        bool handle_kind(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
+        bool handle(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
 
         bool valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool valid(Parser& parser, const std::string& text) const;
@@ -62,7 +62,7 @@ class Rule {
 
     // Operators
     public:
-        Rule& operator()(Sequence sequence);
+        Rule& operator()(Flag flag);
 
         Rule& operator<<(Rule& other);
         Rule& operator&(Rule& other);

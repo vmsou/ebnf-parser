@@ -18,8 +18,8 @@ void Rule::mode(Mode mode) { this->_mode = mode; }
 Rule::Kind Rule::kind() const { return this->_kind; }
 void Rule::kind(Kind kind) { this->_kind = kind; }
 
-Rule::Sequence Rule::sequence() const { return this->_sequence; }
-void Rule::sequence(Sequence sequence) { this->_sequence = sequence; }
+Rule::Flag Rule::flag() const { return this->_flag; }
+void Rule::flag(Flag flag) { this->_flag = flag; }
 
 bool Rule::handle_text(buffer_t& tokens, buffer_t& buffer) const {
     std::size_t len = this->_command.size();
@@ -65,7 +65,7 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
     return valid;
 }
 
-bool Rule::handle_kind(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
+bool Rule::handle(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
     switch (this->kind()) {
         case Kind::NONE: return false; break;
@@ -79,19 +79,26 @@ bool Rule::handle_kind(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
 
 bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
-    switch (this->sequence()) {
-        case Sequence::REPETITION: {
+    switch (this->flag()) {
+        case Flag::REPETITION: {
             valid = true;
             bool curr_valid = true;
             while (curr_valid) {
                 buffer_t temp_buffer;
-                curr_valid = this->handle_kind(parser, tokens, temp_buffer);
+                curr_valid = this->handle(parser, tokens, temp_buffer);
                 if (!curr_valid) Parser::revert_tokens(tokens, temp_buffer);
                 else for (const token_t& t : temp_buffer) buffer.push_front(t);
             }
             break;
         }
-        default: valid = this->handle_kind(parser, tokens, buffer); break;
+        case Flag::OPTIONAL: {
+            valid = true;
+            buffer_t temp_buffer;
+            if (!this->handle(parser, tokens, temp_buffer)) Parser::revert_tokens(tokens, temp_buffer);
+            else for (const token_t& t : temp_buffer) buffer.push_front(t);
+            break;
+        }
+        default: valid = this->handle(parser, tokens, buffer); break;
     }
     return valid;
 }
@@ -103,11 +110,11 @@ bool Rule::valid(Parser& parser, const std::string& text) const {
     return valid;
 }
 
-Rule& Rule::repetition() { return (*this)(Sequence::REPETITION); }
-Rule& Rule::optional() { return (*this)(Sequence::OPTIONAL); }
+Rule& Rule::repetition() { return (*this)(Flag::REPETITION); }
+Rule& Rule::optional() { return (*this)(Flag::OPTIONAL); }
 
 // Operators
-Rule& Rule::operator()(Sequence sequence) {this->sequence(sequence); return *this; }
+Rule& Rule::operator()(Flag flag) {this->flag(flag); return *this; }
 
 Rule& Rule::operator<<(Rule& other) {
     this->kind(Kind::RULE);
@@ -144,7 +151,7 @@ Rule& Rule::operator|(Rule& other) {
 std::ostream& operator<<(std::ostream& os, const Rule& rule) {
     using Mode = Rule::Mode;
     using Kind = Rule::Kind;
-    using Sequence = Rule::Sequence;
+    using Flag = Rule::Flag;
 
     switch (rule.mode()) {
         case Mode::AND: os << " , "; break;
@@ -152,9 +159,9 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
         default: break;
     }
 
-    switch (rule.sequence()) {
-        case Sequence::REPETITION: os << "{ "; break;
-        case Sequence::OPTIONAL: os << "[ "; break;
+    switch (rule.flag()) {
+        case Flag::REPETITION: os << "{ "; break;
+        case Flag::OPTIONAL: os << "[ "; break;
         default: break;
     }
 
@@ -168,17 +175,17 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
             break;
         }
         case Kind::GROUP: {
-            if (rule.sequence() == Sequence::NONE) os << "(";
+            if (rule.flag() == Flag::NONE) os << "(";
             for (const Rule& r : rule._elements) os << r;
-            if (rule.sequence() == Sequence::NONE) os << ")";
+            if (rule.flag() == Flag::NONE) os << ")";
             break;
         }
         default: break;
     }
 
-    switch (rule.sequence()) {
-        case Sequence::REPETITION: os << " }"; break;
-        case Sequence::OPTIONAL: os << " ]"; break;
+    switch (rule.flag()) {
+        case Flag::REPETITION: os << " }"; break;
+        case Flag::OPTIONAL: os << " ]"; break;
         default: break;
     }
     return os;
