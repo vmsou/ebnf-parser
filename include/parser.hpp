@@ -1,28 +1,36 @@
 #include <initializer_list>
 #include <iostream>
 #include <list>
+#include <sstream>
 #include <string>
 #include <unordered_map>
 #include <vector>
 
 class Parser;
 
+struct CharRange { 
+    char from, to; 
+    bool operator()(char c) const;
+    friend std::istream& operator>>(std::istream& is, CharRange& r);
+};
+
 class Rule {
     // Alias
     public:
         enum class Mode { NONE=0, START, AND, OR };
-        enum class Kind { NONE=0, RULE, TEXT, REF, GROUP };
+        enum class Kind { NONE=0, RULE, TEXT, REF, GROUP, RANGE };
         enum class Flag { NONE=0, OPTIONAL, REPETITION };
         using token_t = char;
         using buffer_t = std::list<token_t>;
 
     // Attributes
-    public:
+    private:
         Mode _mode = Mode::NONE;
         Kind _kind = Kind::NONE;
         Flag _flag = Flag::NONE;
         std::string _command;
         std::vector<Rule> _elements;
+        std::vector<CharRange> _ranges;
 
     // Constructors
     public:
@@ -34,6 +42,7 @@ class Rule {
     public:
         static Rule Text(const std::string& command);
         static Rule Ref(const std::string& command);
+        static Rule Range(const std::string& command);
 
     // Methods
     public:
@@ -51,6 +60,7 @@ class Rule {
         bool handle_text(buffer_t& tokens, buffer_t& buffer) const;
         bool handle_ref(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
         bool handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
+        bool handle_range(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
 
         bool handle(Parser& parser, buffer_t& tokens, buffer_t& buffer) const;
 

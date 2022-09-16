@@ -1,13 +1,33 @@
 #include "parser.hpp"
 
+/* CharRange:: */
+bool CharRange::operator()(char c) const { return (c >= this->from) && (c <= this->to); }
+
+std::istream& operator>>(std::istream& is, CharRange& r) {
+    char from, line;
+    if (!(is >> from >> line)) return is;
+    if (line != '-') { r = CharRange{ from, line }; return is; }
+
+    char to;
+    if (!(is >> to)) return is;
+    r = CharRange{ from, to };
+    return is;
+}
+
 /* Rule:: */
 // Constructors
-Rule::Rule(Kind kind, const std::string& command): _kind{ kind }, _command{ command } {}
+Rule::Rule(Kind kind, const std::string& command): _kind{ kind }, _command{ command } {
+    if (kind == Kind::RANGE) {
+        std::istringstream iss{ this->_command };
+        for (CharRange r; iss >> r;) this->_ranges.push_back(r);
+    }
+}
 Rule::Rule(const std::string& name): Rule(Kind::RULE, name) {}
 
 // Static Methods
 Rule Rule::Text(const std::string& command) { return Rule(Kind::TEXT, command); }
 Rule Rule::Ref(const std::string& command) { return Rule(Kind::REF, command); }
+Rule Rule::Range(const std::string& command) { return Rule(Kind::RANGE, command); }
 
 // Methods
 std::string Rule::name() const { return this->_command; }
@@ -65,6 +85,18 @@ bool Rule::handle_rule(Parser& parser, buffer_t& tokens, buffer_t& buffer) const
     return valid;
 }
 
+bool Rule::handle_range(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
+    token_t t;
+    if (!Parser::get_token(tokens, t)) return false;;
+
+    for (const CharRange& r : this->_ranges) {
+        bool in_range = r(t);
+        // std::cout << r.from << '-' << r.to << "(" << t << "): " << in_range << '\n';
+        if (in_range) { Parser::push_token(t, buffer); return true; }
+    }
+    return false;
+}
+
 bool Rule::handle(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
     bool valid = false;
     switch (this->kind()) {
@@ -73,6 +105,7 @@ bool Rule::handle(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
         case Kind::REF: valid = this->handle_ref(parser, tokens, buffer); break;
         case Kind::RULE: valid = this->handle_rule(parser, tokens, buffer); break;
         case Kind::GROUP: valid = this->handle_rule(parser, tokens, buffer); break;
+        case Kind::RANGE: valid = this->handle_range(parser, tokens, buffer); break;
     }
     return valid;
 }
@@ -104,7 +137,10 @@ bool Rule::valid(Parser& parser, buffer_t& tokens, buffer_t& buffer) const {
 }
 
 bool Rule::valid(Parser& parser, const std::string& text) const {
-    buffer_t tokens(text.begin(), text.end());
+    // buffer_t tokens(text.begin(), text.end());
+    std::istringstream iss{ text };
+    buffer_t tokens;
+    for (char c; iss >> c;) tokens.push_back(c);
     buffer_t buffer;
     bool valid = this->valid(parser, tokens, buffer) && tokens.empty();
     return valid;
@@ -141,7 +177,7 @@ Rule& Rule::operator|(Rule& other) {
         Rule group(Kind::GROUP, "");
         this->mode(Mode::START);
         group._elements.push_back(*this);
-        (*this) = group;
+        this->operator=(group);
     }
     this->_elements.push_back(other);
     return *this;
@@ -178,6 +214,10 @@ std::ostream& operator<<(std::ostream& os, const Rule& rule) {
             if (rule.flag() == Flag::NONE) os << "(";
             for (const Rule& r : rule._elements) os << r;
             if (rule.flag() == Flag::NONE) os << ")";
+            break;
+        }
+        case Kind::RANGE: {
+            os << "r\"" << rule.name() << "\"";
             break;
         }
         default: break;

@@ -1,6 +1,10 @@
-#include <iostream>
 
 #include "parser.hpp"
+
+Rule operator"" _rule(const char* text, size_t) { return Rule(text); }
+Rule operator"" _text(const char* text, size_t) { return Rule::Text(text); }
+Rule operator"" _ref(const char* text, size_t) { return Rule::Ref(text); }
+Rule operator"" _range(const char* text, size_t) { return Rule::Range(text); }
 
 int main() {
     /* Parser::Grammar rules = {
@@ -10,17 +14,10 @@ int main() {
         Rule("FechaParen") << Rule::Text(")"),
     }; */
 
-    Parser::Grammar rules = {
-        Rule("whitespace") << " " | "\n" | "\t" | "\r",
-        Rule("letter") << "A" | "B" | "C" | "D" | "E" | "F" | "G"
-                        | "H" | "I" | "J" | "K" | "L" | "M" | "N"
-                        | "O" | "P" | "Q" | "R" | "S" | "T" | "U"
-                        | "V" | "W" | "X" | "Y" | "Z" | "a" | "b"
-                        | "c" | "d" | "e" | "f" | "g" | "h" | "i"
-                        | "j" | "k" | "l" | "m" | "n" | "o" | "p"
-                        | "q" | "r" | "s" | "t" | "u" | "v" | "w"
-                        | "x" | "y" | "z",
-        Rule("digit") << "0" | "1" | "2" | "3" | "4" | "5" | "6" | "7" | "8" | "9",
+    /* Parser::Grammar rules = {
+        Rule("whitespace") << " " | "\\n" | "\\t" | "\\r",
+        Rule("letter") << Rule::Range("a-zA-Z"),
+        Rule("digit") << Rule::Range("0-9"),
         Rule("symbol") << "[" | "]" | "{" | "}" | "(" | ")" | "<" | ">"  | "=" | "|" | "." | "," | ";" | "'" | (Rule::Text("\\") & "\""),
         Rule("character") << Rule::Ref("letter") | Rule::Ref("digit") | Rule::Ref("symbol") | "_",
         Rule("identifier") << Rule::Ref("letter") & (Rule::Ref("letter") | Rule::Ref("digit") | "_").repetition(),
@@ -35,6 +32,18 @@ int main() {
                      | (Rule::Ref("rhs") & Rule::Text(",") & Rule::Ref("rhs")),
         Rule("rule") << Rule::Ref("lhs") & Rule::Ref("whitespace").repetition() & "=" & Rule::Ref("whitespace").repetition() & Rule::Ref("rhs") & Rule::Ref("whitespace").repetition() &  ";",
         Rule("grammar") << Rule::Ref("rule").repetition(),
+    }; */
+
+    Parser::Grammar rules = {
+        Rule("FORMULA") << Rule::Ref("CONSTANTE") | Rule::Ref("PROPOSICAO") | Rule::Ref("FORMULAUNARIA") | Rule::Ref("FORMULABINARIA"),
+        Rule("CONSTANTE") << "T" | "F",
+        Rule("PROPOSICAO") << "A" | "B" | "C" | "D",
+        Rule("FORMULAUNARIA") << Rule::Ref("ABREPAREN") & Rule::Ref("OPERATORUNARIO") & Rule::Ref("FORMULA") & Rule::Ref("FECHAPAREN"),
+        Rule("FORMULABINARIA") << Rule::Ref("ABREPAREN") & Rule::Ref("OPERATORBINARIO") & Rule::Ref("FORMULA") & Rule::Ref("FORMULA") & Rule::Ref("FECHAPAREN"),
+        Rule("ABREPAREN") << "(",
+        Rule("FECHAPAREN") << ")",
+        Rule("OPERATORUNARIO") << "\\neg",
+        Rule("OPERATORBINARIO") << "\\vee" | "\\wedge" | "\\rightarrow" | "\\leftrightarrow",
     };
 
 
@@ -44,16 +53,16 @@ int main() {
 
     Parser parser{ &rules };
     
-    bool is_running = true;
     std::string chosen_rule;
     std::cout << "Rule: ";
     std::getline(std::cin, chosen_rule);
-    while (!parser.has_rule(chosen_rule)) {
+    while (!chosen_rule.empty() && !parser.has_rule(chosen_rule)) {
         std::cout << "Rule not found. Try Again.\n";
         std::cout << "Rule: ";
         std::getline(std::cin, chosen_rule);
     }
 
+    bool is_running = !chosen_rule.empty();
     std::string expr;
     while (is_running) {
         std::cout << "> ";
